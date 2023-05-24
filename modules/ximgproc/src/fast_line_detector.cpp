@@ -32,7 +32,7 @@ class FastLineDetectorImpl : public FastLineDetector
 
     private:
         int imagewidth, imageheight, threshold_length;
-        float threshold_dist;
+        float threshold_dist;  // [pixels] ignore lines shorter than this
         double canny_th1, canny_th2;
         int canny_aperture_size;
         bool do_merge;
@@ -307,6 +307,9 @@ template<class T>
 
 void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, std::vector<SEGMENT>& segments)
 {
+    const size_t max_lines = 50000;  // [lines] don't return more than this many lines from detect()
+    const float max_angle = 0.1;  // [radians] ignore lines with greater angle against the x/y axis
+
     bool is_line;
 
     int i, j;
@@ -432,7 +435,24 @@ void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, s
         seg.x2 = e2.x;
         seg.y2 = e2.y;
 
+        float dx = seg.x1 - seg.x2;
+        float dy = seg.y1 - seg.y2;
+        if (dx * dx + dy * dy < threshold_length * threshold_length) {
+            continue;
+        }
+        if ((seg.x1 <= 5.0f && seg.x2 <= 5.0f) || (seg.y1 <= 5.0f && seg.y2 <= 5.0f) ||
+                (seg.x1 >= imagewidth - 5.0f && seg.x2 >= imagewidth - 5.0f) ||
+                (seg.y1 >= imageheight - 5.0f && seg.y2 >= imageheight - 5.0f)) {
+            continue;
+        }
+        float angle = atan(fabs(dx) / (1e-6 + fabs(dy)));
+        if ( !((-max_angle <= angle && angle <= max_angle) || angle <= -0.5 * CV_PI + max_angle || angle > 0.5 * CV_PI - max_angle)) {
+            continue;
+        }
         segments.push_back(seg);
+        if (segments.size() == max_lines) {
+            return;
+        }
         i = i + j;
     }
 }
@@ -557,19 +577,12 @@ void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& s
             for ( int i = 0; i < (int)segments.size(); i++ )
             {
                 seg = segments[i];
-                float length = sqrt((seg.x1 - seg.x2)*(seg.x1 - seg.x2) +
-                        (seg.y1 - seg.y2)*(seg.y1 - seg.y2));
-                if(length < threshold_length)
-                    continue;
-                if( (seg.x1 <= 5.0f && seg.x2 <= 5.0f) ||
-                    (seg.y1 <= 5.0f && seg.y2 <= 5.0f) ||
-                    (seg.x1 >= imagewidth - 5.0f && seg.x2 >= imagewidth - 5.0f) ||
-                    (seg.y1 >= imageheight - 5.0f && seg.y2 >= imageheight - 5.0f) )
-                    continue;
                 additionalOperationsOnSegment(src, seg);
-                if(!do_merge)
+                if(!do_merge) {
                     segments_all.push_back(seg);
-                segments_tmp.push_back(seg);
+                } else {
+                    segments_tmp.push_back(seg);
+                }
             }
             points.clear();
             segments.clear();
