@@ -226,15 +226,15 @@ static Mat solveLinearEquation(const Mat_<float>& img, Mat_<float>& W_h_, Mat_<f
     Eigen::Map<const Eigen::VectorXf> tin(img_t.ptr<float>(), img_t.rows*img_t.cols);
     Eigen::VectorXf x = cg.solve(tin);
 
-    Mat_<float> tout(img.rows, img.cols);
-    tout.forEach(
+    Mat tout(img.rows, img.cols, CV_32FC1);
+    tout.forEach<float>(
         [&](float &pixel, const int * position) -> void
         {
             pixel = x(position[1]*img.rows + position[0]);
         }
     );
 
-    return std::move(tout);
+    return tout;
 }
 
 static Mat_<float> tsmooth(const Mat_<float>& src, float lambda=0.01f, float sigma=3.0f, float sharpness=0.001f)
@@ -345,7 +345,6 @@ static double minimize_scalar_bounded(const Mat_<float>& I, double begin, double
     double rat = 0.0, e = 0.0;
     double x = xf;
     double fx = -entropy(applyK(I, static_cast<float>(x)));
-    int num = 1;
     double fu = std::numeric_limits<double>::infinity();
 
     double ffulc = fx, fnfc = fx;
@@ -398,7 +397,6 @@ static double minimize_scalar_bounded(const Mat_<float>& I, double begin, double
         double si = sgn(rat) + (rat == 0);
         x = xf + si * std::max(std::abs(rat), tol1);
         fu = -entropy(applyK(I, static_cast<float>(x)));
-        num += 1;
 
         if (fu <= fx) {
             if (x >= xf) {

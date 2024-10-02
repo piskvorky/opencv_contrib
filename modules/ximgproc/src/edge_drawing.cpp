@@ -1366,7 +1366,7 @@ void EdgeDrawingImpl::SplitSegment2Lines(double* x, double* y, int noPixels, int
     {
         // Start by fitting a line to MIN_LINE_LEN pixels
         bool valid = false;
-        double lastA(0), lastB(0), error;
+        double lastA(0), lastB(0), error(0);
         int lastInvert(0);
 
         while (noPixels >= min_line_len)
@@ -2592,7 +2592,7 @@ void EdgeDrawingImpl::detectEllipses(OutputArray ellipses)
     }
 
     // This is how much space we will allocate for circles buffers
-    int maxNoOfCircles = (int)lines.size() / 3 + noCircles1 * 2;
+    int maxNoOfCircles = (int)lines.size() / 3 + noCircles1 * 2 + 2;
 
     edarcs1 = new EDArcs(maxNoOfCircles);
     DetectArcs();    // Detect all arcs
@@ -3163,10 +3163,8 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
 
         int tr = -100;
         int tc = -100;
-        int tcount = 0;
 
         int noPeripheryPixels = 0;
-        int noEdgePixels = 0;
         int aligned = 0;
         for (int j = 0; j < noPoints; j++)
         {
@@ -3191,7 +3189,6 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
             {
                 tr = r;
                 tc = c;
-                tcount++;
             }
 
             //
@@ -3300,9 +3297,6 @@ void EdgeDrawingImpl::ValidateCircles(bool validate)
                            // This produces less false positives, but occationally misses on some valid circles
             }
         out:
-            if (edgeImg[r * width + c] == 255)
-                noEdgePixels++;
-
             // compute gx & gy
             int com1 = smoothImg[(r + 1) * width + c + 1] - smoothImg[(r - 1) * width + c - 1];
             int com2 = smoothImg[(r - 1) * width + c + 1] - smoothImg[(r + 1) * width + c - 1];
