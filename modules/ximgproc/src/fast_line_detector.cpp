@@ -308,7 +308,7 @@ template<class T>
 void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, std::vector<SEGMENT>& segments)
 {
     const size_t max_lines = 50000;  // [lines] don't return more than this many lines from detect()
-    const float max_angle = 0.1;  // [radians] ignore lines with greater angle against the x/y axis
+    const float max_angle = 0.1f;  // [radians] ignore lines with greater angle against the x/y axis
 
     bool is_line;
 
@@ -446,7 +446,7 @@ void FastLineDetectorImpl::extractSegments(const std::vector<Point2i>& points, s
             continue;
         }
         float angle = atan(fabs(dx) / (1e-6 + fabs(dy)));
-        if ( !((-max_angle <= angle && angle <= max_angle) || angle <= -0.5 * CV_PI + max_angle || angle > 0.5 * CV_PI - max_angle)) {
+        if ( !((-max_angle <= angle && angle <= max_angle) || angle <= -0.5f * CV_PI + max_angle || angle > 0.5f * CV_PI - max_angle)) {
             continue;
         }
         segments.push_back(seg);
@@ -569,11 +569,6 @@ void FastLineDetectorImpl::lineDetection(const Mat& src, std::vector<SEGMENT>& s
 
             extractSegments(points, segments);
 
-            if ( segments.size() == 0 )
-            {
-                points.clear();
-                continue;
-            }
             for ( int i = 0; i < (int)segments.size(); i++ )
             {
                 seg = segments[i];
